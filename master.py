@@ -1,7 +1,8 @@
-import json
 import asyncio
-import aiohttp
+import json
 import logging
+
+import aiohttp
 from pynput import keyboard
 
 # Constants
